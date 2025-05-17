@@ -1,0 +1,330 @@
+<!--
+    Name: Narayan Lohani
+    Student Number: 2408869
+-->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Narayan's Movie Review App</title>
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <!-- Main title -->
+        <span class="title">Movie Reviews</span>
+
+        <!-- Main container for the application -->
+        <div class="container">
+            <!-- Form section for adding/editing movie reviews -->
+            <div class="add-review-container">
+                <span class="heading">Add Movie Review</span>
+                <input
+                    type="text"
+                    id="movieName"
+                    placeholder="Movie name"
+                    class="form-field" />
+                <input
+                    type="text"
+                    id="movieDirectorName"
+                    placeholder="Director name"
+                    class="form-field" />
+                <input type="date" id="movieReleaseDate" class="form-field" />
+                <select id="movieRating" class="form-field">
+                    <option value="0">0/5</option>
+                    <option value="1">1/5</option>
+                    <option value="2">2/5</option>
+                    <option value="3">3/5</option>
+                    <option value="4">4/5</option>
+                    <option value="5">5/5</option>
+                </select>
+                <div class="btn-collection">
+                    <button class="btn btn-add" id="addButton">Add</button>
+                    <button
+                        class="btn btn-cancel"
+                        id="cancelButton"
+                        style="display: none">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Display section for movie reviews -->
+            <div class="show-review-container">
+                <span class="heading">Movie Review List</span>
+                <!-- Sorting Button -->
+                <div class="sorting-field">
+                    <span class="label">Sort By </span>
+                    <select id="sortField" class="btn btn-sort">
+                        <option value="movie_name">Title</option>
+                        <option value="director_name">Director</option>
+                        <option value="release_date">Release Date</option>
+                        <option value="rating">Rating</option>
+                    </select>
+                </div>
+                <!-- Card Collection -->
+                <div class="movie-list" id="movieReviewList"></div>
+            </div>
+        </div>
+
+        <!-- External Dependencies : jQuery -->
+        <script
+            src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+
+        <!-- Main Application Logic -->
+        <script type="module">
+            /**
+             * Firebase SDK Imports
+             * - Using Firebase v11.7.3
+             * - Required modules: app (core) and firestore (database)
+             */
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-app.js";
+            import {
+                getFirestore,
+                collection,
+                query,
+                orderBy,
+                onSnapshot,
+                addDoc,
+                Timestamp,
+                doc,
+                deleteDoc,
+                getDoc,
+                updateDoc,
+            } from "https://www.gstatic.com/firebasejs/11.7.3/firebase-firestore.js";
+
+            /**
+             * Firebase Configuration
+             * - Contains essential keys and identifiers for the Firebase project
+             * - Used to initialize the Firebase application
+             */
+            import { firebaseConfig } from "./config.js";
+
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+
+            /**
+             * Formats a Firestore timestamp into a readable date string formaT
+             * @param {Object} timestamp - Firestore timestamp object
+             * @returns {string} Formatted date string (e.g., "January 1, 2025")
+             */
+            function formatFirestoreTimestamp(timestamp) {
+                const milliseconds =
+                    timestamp.seconds * 1000 +
+                    Math.floor(timestamp.nanoseconds / 1e6);
+                const date = new Date(milliseconds);
+
+                const options = {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                };
+                return date.toLocaleDateString("en-US", options);
+            }
+
+            /**
+             * Fetches and displays movie reviews from Firestore
+             * - Uses real-time listener (onSnapshot)
+             * - Updates UI whenever data changes
+             * @returns {Function} Unsubscribe function for the snapshot listener
+             */
+            function fetchMovieReviews() {
+                const movieReviews = onSnapshot(fetchQuery, (snapshot) => {
+                    $("#movieReviewList").empty();
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const card = `
+                        <div class="movie-card">
+                        <span class="movie-card-title">${data.movie_name}</span>
+                        <div class="movie-details">
+                            <div class="movie-data movie-fields">
+                                <strong>Director</strong>
+                                <strong>Rating</strong>
+                                <strong>Release Date</strong>
+                            </div>
+                            <div class="movie-data movie-values">
+                                <span>${data.director_name}</span>
+                                <span>${data.rating}/5</span>
+                                <span>${formatFirestoreTimestamp(
+                                    data.release_date
+                                )}</span>
+                            </div>
+                        </div>
+                        <div class="btn-collection card-buttons">
+                            <button class="btn btn-edit" id="editButton" data-id="${
+                                doc.id
+                            }">Edit</button>
+                            <button class="btn btn-del" id="deleteButton" data-id="${
+                                doc.id
+                            }">Delete</button>
+                        </div>
+                    </div>
+                        `;
+                        $("#movieReviewList").append(card);
+                    });
+                });
+                return movieReviews;
+            }
+
+            // State management variables
+            let currentSortField = "movie_name";
+            let isEditing = false;
+            let editingDocId = null;
+
+            /**
+             * Creates a Firestore query with sorting
+             * @param {string} sortField - Field to sort by
+             * @returns {Query} Firestore query object
+             */
+            function createQueryByField(sortField) {
+                return query(
+                    collection(db, "MovieReviews"),
+                    orderBy(sortField)
+                );
+            }
+
+            // Initialize query and fetch initial data
+            let fetchQuery = createQueryByField(currentSortField);
+            let movieReview = fetchMovieReviews();
+
+            /**
+             * Event Handlers
+             * - Sort field: Updates review list order
+             * - Add/Update button: Saves new review or updates existing one
+             * - Cancel button: Resets form and editing state
+             * - Edit button: Loads review data into form for editing
+             * - Delete button: Removes a review after confirmation
+             */
+
+            // Sort field change handler
+            $("#sortField").on("change", function () {
+                currentSortField = $(this).val();
+                fetchQuery = createQueryByField(currentSortField);
+
+                if (movieReview) {
+                    movieReview();
+                }
+                movieReview = fetchMovieReviews();
+            });
+
+            // Add/Update handler
+            $("#addButton").click(async function () {
+                const name = $("#movieName").val().trim();
+                const director = $("#movieDirectorName").val().trim();
+                const rating = parseInt($("#movieRating").val());
+                const releaseDate = Timestamp.fromDate(
+                    new Date($("#movieReleaseDate").val())
+                );
+
+                if (!name || !director || !$("#movieReleaseDate").val()) {
+                    alert("Please fill in all fields");
+                    return;
+                }
+
+                const movieData = {
+                    movie_name: name,
+                    rating: rating,
+                    release_date: releaseDate,
+                    director_name: director,
+                };
+
+                try {
+                    if (isEditing) {
+                        // Update existing document
+                        await updateDoc(
+                            doc(db, "MovieReviews", editingDocId),
+                            movieData
+                        );
+                        isEditing = false;
+                        editingDocId = null;
+                        $("#addButton").text("Add");
+                    } else {
+                        // Add new document
+                        await addDoc(collection(db, "MovieReviews"), movieData);
+                    }
+
+                    // Clear form
+                    $("#movieName").val("");
+                    $("#movieDirectorName").val("");
+                    $("#movieReleaseDate").val("");
+                    $("#movieRating").val("0");
+                    $("#cancelButton").hide();
+                } catch (error) {
+                    console.error("Error saving document:", error);
+                    alert("Something went wrong while saving your review.");
+                }
+            });
+
+            // Cancel handler
+            $("#cancelButton").click(function () {
+                // Reset form
+                $("#movieName").val("");
+                $("#movieDirectorName").val("");
+                $("#movieReleaseDate").val("");
+                $("#movieRating").val("0");
+
+                // Reset editing state
+                isEditing = false;
+                editingDocId = null;
+
+                // Update UI
+                $("#addButton").text("Add");
+                $("#cancelButton").hide();
+            });
+
+            // Edit handler
+            $(document).on("click", ".btn-edit", async function () {
+                const id = $(this).attr("data-id");
+                const docRef = doc(db, "MovieReviews", id);
+
+                try {
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+
+                        // Populate form fields
+                        $("#movieName").val(data.movie_name);
+                        $("#movieDirectorName").val(data.director_name);
+                        $("#movieRating").val(data.rating);
+
+                        // Convert Firestore timestamp to HTML date input format
+                        const date = new Date(data.release_date.seconds * 1000);
+                        const dateString = date.toISOString().split("T")[0];
+                        $("#movieReleaseDate").val(dateString);
+
+                        // Update button text and state
+                        $("#addButton").text("Update");
+                        $("#cancelButton").show();
+                        isEditing = true;
+                        editingDocId = id;
+                    }
+                } catch (error) {
+                    console.error("Error getting document:", error);
+                    alert("Error loading movie details");
+                }
+            });
+
+            // Delete handler
+            $(document).on("click", ".btn-del", function () {
+                const id = $(this).attr("data-id");
+                const docRef = doc(db, "MovieReviews", id);
+                const confirmDelete = confirm(
+                    "Are you sure you want to delete this review?"
+                );
+                if (!confirmDelete) {
+                    return;
+                }
+                deleteDoc(docRef)
+                    .then(() => {
+                        console.log("Document successfully deleted!");
+                    })
+                    .catch((error) => {
+                        console.error("Error removing document: ", error);
+                    });
+            });
+        </script>
+    </body>
+</html>

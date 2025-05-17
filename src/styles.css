@@ -1,0 +1,152 @@
+body {
+    height: 100vh;
+    background: linear-gradient(0, #3eb489, #2a9d8f);
+    font-family: "Segoe UI", sans-serif;
+}
+
+.title,
+.heading,
+.label {
+    display: inline-block;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+    font-family: "Segoe UI", sans-serif;
+    letter-spacing: 1px;
+}
+
+.container {
+    display: flex;
+    padding: 8px;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-height: 100vh;
+}
+
+.heading {
+    font-size: 1.5rem;
+}
+
+.add-review-container,
+.show-review-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 2px solid white;
+    border-radius: 12px;
+    padding: 20px 12px;
+}
+
+.form-field {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 4px;
+    font-size: large;
+    color: rgb(59, 59, 59);
+}
+
+.btn {
+    font-size: medium;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: white;
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-collection {
+    display: flex;
+    justify-content: space-between;
+}
+
+.btn-add {
+    background-color: #81c784;
+}
+
+.btn-cancel {
+    background-color: #6c757d;
+}
+
+.btn-edit {
+    color: rgb(20, 20, 20);
+    background-color: #f9c74f;
+}
+
+.btn-del {
+    background-color: #e63946;
+}
+
+.show-review-container {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%);
+}
+
+.label {
+    display: inline;
+    width: fit-content;
+    font-size: 1rem;
+}
+
+.sorting-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-sort {
+    color: white;
+    background-color: #577590;
+}
+
+.movie-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.movie-card {
+    padding-top: 8px;
+    font-size: 1.2rem;
+    background-color: white;
+    width: fit-content;
+    min-width: 400px;
+    height: fit-content;
+    border-radius: 16px;
+}
+
+.movie-card-title {
+    font-size: larger;
+    font-weight: bold;
+    padding: 12px 20px;
+}
+
+.movie-details {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    padding: 8px 20px;
+}
+
+.movie-data {
+    display: flex;
+    gap: 4px;
+    flex-direction: column;
+}
+
+.card-buttons {
+    border-top: 1px solid gray;
+    border-radius: 0px 0px 16px 16px;
+    padding: 12px 20px;
+    background-color: #dbdbdb;
+}
